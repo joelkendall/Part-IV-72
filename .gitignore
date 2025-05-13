@@ -1,2 +1,6 @@
 'venv' 
+
+#user related files
+.venv
 data/
+local_user
