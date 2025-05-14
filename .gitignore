@@ -1,1 +1,8 @@
 'venv' 
+
+#user related files
+.venv
+data/
+local_user
+*.egg-info
+src/__pycache__

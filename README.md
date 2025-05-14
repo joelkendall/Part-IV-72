@@ -11,6 +11,7 @@ A dependency view of software evolution
     ```
 
 3. Run the virtual environment
+
     Windows:
     ```
     .venv\Scripts\activate
