@@ -4,6 +4,8 @@ import argparse
 import os 
 import sys
 from pathlib import Path
+from utils.fileResolver import FileResolver
+from utils.exceptions import TSVFileNotFoundError, TSVMultipleFilesFoundError
 
 # To run this file:
 # python TSVReader.py <path_to_tsv_file> 
@@ -18,44 +20,18 @@ def main():
 
     # ---- CONSTANTS
     FILE_OBTAINED = args.file
-    IS_DIRECT_PATH = os.path.exists(FILE_OBTAINED)
     PROJECT_ROOT = Path(__file__).resolve().parent.parent
-    MATCHED_FILES = list(PROJECT_ROOT.rglob(FILE_OBTAINED)) if not IS_DIRECT_PATH else []
-    def separator(): print("-" * 80)
 
-    # ---- FILE RESOLUTION & VALIDATIONS
-    if IS_DIRECT_PATH: 
-        TSV_PATH = Path(FILE_OBTAINED).resolve()
-
-    elif len(MATCHED_FILES) == 1:
-        TSV_PATH = MATCHED_FILES[0]
-
-    elif len(MATCHED_FILES) > 1:
-        print(f"\nMultiple TSV files found for {FILE_OBTAINED}")
-        separator()
-
-        shown_suggestions = set()
-        
-        for match in MATCHED_FILES:
-            rel_path = match.relative_to(PROJECT_ROOT)
-            suggestion = Path(match.parent.name) / match.name
-            
-            #Avoid showing the same suggestion multiple times
-            if suggestion in shown_suggestions: continue
-
-            #Option 1: without setup.py
-            print(f"- {rel_path} \nTry: python src/TSVReader.py {suggestion}")
-            print("OR")
-            #Option 2: with setup.py
-            print(f"Try: tsvreader {suggestion}")
-            separator()
-
-            shown_suggestions.add(suggestion)
-        sys.exit(1)
-    else: ## FILE NOT FOUND
-        print(f"TSV file {FILE_OBTAINED} not found")
+    # ---- FILE RESOLUTION
+    try: 
+        TSV_PATH = FileResolver(FILE_OBTAINED, PROJECT_ROOT).resolve()
+    except TSVFileNotFoundError as e:
+        print(f"{e}")
         sys.exit(1)
 
+    except TSVMultipleFilesFoundError as e:
+        print(f"{e}")
+        sys.exit(1)
 
     # ---- TSV PROCESSING
     # there are hashes in the details columns so we cant use the comment param to omit hashes as comments, just skip the commented lines instead
