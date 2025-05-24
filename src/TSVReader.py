@@ -62,8 +62,10 @@ def main():
     # hope all tsv files have the same amount of commented lines otherwise were gonna have to preprocess them
     deps = pd.read_csv(TSV_PATH, sep='\t', skiprows=26) # skiprows=26 as it is for now, but we will need to preprocess for sure.
 
+    # ---- COUNTING ALL DEPENDENCIES
     def countDependencies(deps):
         deps.loc[:, 'Locations'] = deps['Locations'].fillna('')
+        deps = deps[~deps['Inheritance'].str.contains('Polymorphic', na=False)]
         return deps['Locations'].str.split(',').str.len().sum()
 
     # ---- OUTPUT
