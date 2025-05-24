@@ -62,22 +62,42 @@ def main():
     # hope all tsv files have the same amount of commented lines otherwise were gonna have to preprocess them
     deps = pd.read_csv(TSV_PATH, sep='\t', skiprows=26) # skiprows=26 as it is for now, but we will need to preprocess for sure.
 
-    # ---- COUNTING ALL DEPENDENCIES
-    def countDependencies(deps):
+    # ---- CREATING CORRECT DATAFRAME (new row for each location)
+    def correctDataFrame(deps):
         deps.loc[:, 'Locations'] = deps['Locations'].fillna('')
         deps = deps[~deps['Inheritance'].str.contains('Polymorphic', na=False)]
+        deps.loc[:, 'Locations'] = deps['Locations'].str.split(',')
+        deps= deps.explode('Locations').reset_index(drop=True)
+        return deps
+    
+    # ---- COUNTING ALL DEPENDENCIES
+    def countDependencies(deps):
+        deps = correctDataFrame(deps)
         return deps['Locations'].str.split(',').str.len().sum()
+    
+    # ---- COUNTING DEPENDENCIES BY CATEGORY
+    def displayCategories(deps, column, includeNa):
+        deps = correctDataFrame(deps)
+        categoriesData = deps[column].value_counts(dropna=not includeNa)
+        print(f"\n{column} Categories:")
+        print(categoriesData)
+        print(f"Total: {categoriesData.sum()}")
+
 
     # ---- OUTPUT
     if args.oj:
         noJavaLang = deps[~deps['Target'].str.contains('java.lang')]
         print(f"Number of dependencies (excluding java.lang dependencies): {countDependencies(noJavaLang)}")
+        displayCategories(noJavaLang, 'Category', True)
     elif args.oja:
         noJava = deps[~deps['Target'].str.contains('java')]
         print(f"Number of dependencies (excluding java dependencies): {countDependencies(noJava)}")
+        displayCategories(noJava, 'Category', True)
     else:
         print(f"Number of dependencies: {countDependencies(deps)}")
-
+        displayCategories(deps, 'Category', True)
+    
+    
 # Entry point for setup.py
 if __name__ == '__main__':
     main()
