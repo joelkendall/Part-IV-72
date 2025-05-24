@@ -29,11 +29,11 @@ A dependency view of software evolution
 
 ## Running Script
 
-1. Navigate to root directory
+1. Navigate to src directory
 
 2. Run the script
     ```
-    python src/TSVReader.py
+    python TSVReader.py <path_to_tsv_file> 
     ```
 3. Optional args
 
