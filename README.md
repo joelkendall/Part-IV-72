@@ -33,7 +33,7 @@ A dependency view of software evolution
 
 2. Run the script
     ```
-    python TSVReader.py <path_to_tsv_file> 
+    python TSVReader.py <path to directory containing tsv files> 
     ```
 3. Optional args
 

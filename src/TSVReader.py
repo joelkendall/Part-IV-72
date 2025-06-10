@@ -74,6 +74,11 @@ def main():
             deps = deps[~deps['Inheritance'].str.contains('Polymorphic', na=False)]
             deps.loc[:, 'Locations'] = deps['Locations'].str.split(',')
             deps= deps.explode('Locations').reset_index(drop=True)
+            # renaming duplicate package columns
+            deps = deps.rename(columns={
+                deps.columns[1]: 'SourcePackage',
+                deps.columns[5]: 'TargetPackage'
+            })
             return deps
         
         # ---- COUNTING ALL DEPENDENCIES
@@ -89,19 +94,34 @@ def main():
             print(categoriesData)
             print(f"Total: {categoriesData.sum()}")
 
+        # ---- COUNTING CLASSES
+        # basically all unique source packages also contained in target packages, and then unique target names of those rows
+        def countClasses(deps):
+            deps = correctDataFrame(deps)
+            packages = deps['SourcePackage'].unique()
+            print(f"Number of Source Packages: {len(packages)}")
+            targetMatches = deps[deps['TargetPackage'].isin(packages)]
+            classes = targetMatches['Target'].unique()
+            noTests = [c for c in classes if 'Test' not in str(c)] # needed this cause .unique() returns NumPy array not a pandas series
+            print(f"Number of Classes: {len(classes)}")
+            print(f"Number of Classes (excluding tests): {len(noTests)}")
+
 
         # ---- OUTPUT
         if args.oj:
             noJavaLang = deps[~deps['Target'].str.contains('java.lang')]
             print(f"Number of dependencies (excluding java.lang dependencies): {countDependencies(noJavaLang)}")
             displayCategories(noJavaLang, 'Category', True)
+            countClasses(noJavaLang)
         elif args.oja:
             noJava = deps[~deps['Target'].str.contains('java')]
             print(f"Number of dependencies (excluding java dependencies): {countDependencies(noJava)}")
             displayCategories(noJava, 'Category', True)
+            countClasses(noJava)
         else:
             print(f"Number of dependencies: {countDependencies(deps)}")
             displayCategories(deps, 'Category', True)
+            countClasses(deps)
     
     
 # Entry point for setup.py
