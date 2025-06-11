@@ -106,6 +106,14 @@ def main():
             print(f"Number of Classes: {len(classes)}")
             print(f"Number of Classes (excluding tests): {len(noTests)}")
 
+        # ---- COUNTING METHODS
+        # count all the number of rows with Return as Category, then remove the rows from the count with init keyword
+        def countMethods(deps):
+            deps = correctDataFrame(deps)
+            returnDeps = deps[deps['Category'] == 'Return']
+            nonConstructorMethods = returnDeps[~returnDeps['Details'].str.contains('init', na=False)]
+            methodCount = len(nonConstructorMethods)
+            print(f"Number of Methods (excluding constructors): {methodCount}")
 
         # ---- OUTPUT
         if args.oj:
@@ -113,15 +121,18 @@ def main():
             print(f"Number of dependencies (excluding java.lang dependencies): {countDependencies(noJavaLang)}")
             displayCategories(noJavaLang, 'Category', True)
             countClasses(noJavaLang)
+            countMethods(noJavaLang)
         elif args.oja:
             noJava = deps[~deps['Target'].str.contains('java')]
             print(f"Number of dependencies (excluding java dependencies): {countDependencies(noJava)}")
             displayCategories(noJava, 'Category', True)
             countClasses(noJava)
+            countMethods(noJava)
         else:
             print(f"Number of dependencies: {countDependencies(deps)}")
             displayCategories(deps, 'Category', True)
             countClasses(deps)
+            countMethods(deps)
     
     
 # Entry point for setup.py
