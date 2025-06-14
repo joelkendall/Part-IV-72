@@ -39,7 +39,7 @@ def count_classes(deps):
     packages = deps['SourcePackage'].unique()
     target_matches = deps[deps['TargetPackage'].isin(packages)]
     classes = target_matches['Target'].unique()
-    no_tests = [c for c in classes if 'Test' not in str(c)]
+    no_tests = [c for c in classes if 'Test' not in str(c)] # needed this cause .unique() returns NumPy array not a pandas series
     return len(packages), len(classes), len(no_tests)
 
 def count_methods(deps):
