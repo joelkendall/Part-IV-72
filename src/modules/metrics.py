@@ -77,7 +77,9 @@ def count_by_category(deps):
     """
 
     deps = correct_dataframe(deps)
-    return deps['Category'].value_counts(dropna=False).to_dict()
+    # fill NaN values with 'Unknown'
+    counts = deps['Category'].fillna('Unknown').value_counts(dropna=False)
+    return counts.to_dict()
 
 def compute_metrics(deps):
     total_deps = count_dependencies(deps)
