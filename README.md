@@ -26,3 +26,31 @@ A dependency view of software evolution
     ```
     pip install -r requirements.txt
     ```
+
+## Running Script
+
+1. Navigate to src directory
+
+2. Run the script
+    ```
+    python TSVReader.py <path to directory containing tsv files> 
+    ```
+3. Optional args
+
+    Exclude java.lang dependencies
+    ```
+    --oj
+    ```
+
+    Exclude all java dependencies
+    ```
+    --oja
+    ```
+
+    eg.
+    ```
+    python src/TSVReader.py --oj
+    ```
+
+
+    
