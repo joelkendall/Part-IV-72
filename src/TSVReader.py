@@ -1,9 +1,18 @@
 import pandas as pd
 import argparse
 import sys
+import re
 from pathlib import Path
+from packaging.version import parse
 from modules.metrics import compute_metrics
 from modules.output_options import print_metrics, write_tsv
+
+
+# ---- VERSION PARSING FOR SORTING
+def extract_version(filename):
+    match = re.search(r'(\d+(?:\.\d+)+)', filename)
+    return parse(match.group(1)) if match else parse("0")
+
 
 # To run this file:
 # python TSVReader.py <directory>
@@ -29,7 +38,7 @@ def main():
 
     # No TSV files found
     DIR_PATH = MATCHED_DIRS[0]
-    tsv_files = list(DIR_PATH.glob('*.tsv'))
+    tsv_files = sorted(list(DIR_PATH.glob('*.tsv')), key=lambda f: extract_version(f.name))
     if not tsv_files:
         print(f"No TSV files found in {DIR_PATH}")
         sys.exit(1)
