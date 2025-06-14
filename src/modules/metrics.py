@@ -6,6 +6,7 @@ def correct_dataframe(deps):
     deps = deps[~deps['Inheritance'].str.contains('Polymorphic', na=False)]
     deps.loc[:, 'Locations'] = deps['Locations'].str.split(',')
     deps = deps.explode('Locations').reset_index(drop=True)
+    # renaming duplicate package columns
     deps = deps.rename(columns={
         deps.columns[1]: 'SourcePackage',
         deps.columns[5]: 'TargetPackage'
@@ -41,8 +42,6 @@ def count_classes(deps):
     no_tests = [c for c in classes if 'Test' not in str(c)]
     return len(packages), len(classes), len(no_tests)
 
-  # ---- COUNTING METHODS
-# count all the number of rows with Return as Category, then remove the rows from the count with init keyword
 def count_methods(deps):
     """
     Counts the number of methods in the given dependency data. Removes constructor methods via the 'init' keyword.
