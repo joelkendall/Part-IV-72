@@ -10,6 +10,7 @@ def correct_dataframe(deps):
     deps = deps.explode('Locations').reset_index(drop=True)
     # renaming duplicate package columns
     deps = deps.rename(columns={
+        deps.columns[0]: 'Source',
         deps.columns[1]: 'SourcePackage',
         deps.columns[5]: 'TargetPackage'
     })
@@ -115,8 +116,8 @@ def count_class_changes(deps, previous, source):
     ----------
     deps : pandas.DataFrame
         The dependency data to analyze.
-    previous : dict
-        A dictionary containing the previous release's class data. Value is None for first iteration.
+    previous : pandas.Series or None
+        The previous release's class data. If None, this is the first iteration and no changes
     source : boolean
         If true, uses the source class counting method, otherwise uses the target class counting method.
 
@@ -142,14 +143,57 @@ def count_class_changes(deps, previous, source):
     
     previous_class_data = current_counts
     return 0, 0, 0
+
+def average_dependencies_per_class(deps):
+    """
+    Calculates the average number of dependencies per class in the given dependency data.
+
+    Parameters
+    ----------
+    deps : pandas.DataFrame
+        The dependency data to analyze.
+
+    Returns
+    -------
+    int
+        The average number of dependencies per class.
+    """
+    
+    deps = correct_dataframe(deps)
+    total_deps = count_dependencies(deps)
+    num_classes = count_classes(deps)[1]
+    
+    if num_classes == 0:
+        return 0.0
+    
+    return int(total_deps / num_classes)
+
+def count_dependencies_per_class(deps):
+    """
+    Counts the number of dependencies for each class in the given dependency data.
+
+    Parameters
+    ----------
+    deps : pandas.DataFrame
+        The dependency data to analyze.
+
+    Returns
+    -------
+    dict
+        dictionary where keys are class names and values are the number of dependencies for each class.
+    """
+    
+    deps = correct_dataframe(deps)
+    counts = deps['Source'].value_counts()
+    return counts.to_dict()
     
 def compute_metrics(deps):
     total_deps = count_dependencies(deps)
     num_pkgs, num_classes, num_no_tests = count_classes(deps)
     num_methods = count_methods(deps)
     category_counts = count_by_category(deps)
-    num_source_classes = len(count_source_classes(deps))
     new_classes, removed_classes, changed_classes = count_class_changes(deps, previous_class_data, True)
+    deps_per_class = count_dependencies_per_class(deps)
 
     return {
         'Total Dependencies': total_deps,
@@ -157,8 +201,10 @@ def compute_metrics(deps):
         'Num Classes': num_classes,
         'Num Classes (No Tests)': num_no_tests,
         'Num Methods (No Constructors)': num_methods,
+        'Average Dependencies per Class': average_dependencies_per_class(deps),
         'Class Changes': changed_classes,
         'New Classes': new_classes,
         'Removed Classes': removed_classes,
-        **category_counts
+        **category_counts,
+        **deps_per_class
     }
