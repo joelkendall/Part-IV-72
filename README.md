@@ -26,6 +26,11 @@ A dependency view of software evolution
     ```
     pip install -r requirements.txt
     ```
+    or
+
+    ```
+    pip install -e .
+    ```
 
 ## Running Script
 
@@ -49,7 +54,7 @@ A dependency view of software evolution
 
     eg.
     ```
-    python src/TSVReader.py --oj
+    python TSVReader.py data/junit-depfiles/junit-depfiles --oj
     ```
 
 

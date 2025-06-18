@@ -1,5 +1,7 @@
 import pandas as pd
 
+previous_class_data = None
+
 # ---- CREATING CORRECT DATAFRAME (new row for each location and removing polymorphic dependencies)
 def correct_dataframe(deps):
     deps.loc[:, 'Locations'] = deps['Locations'].fillna('')
@@ -17,7 +19,7 @@ def count_dependencies(deps):
     deps = correct_dataframe(deps)
     return deps['Locations'].str.split(',').str.len().sum()
 
-def count_classes(deps):
+def count_classes(deps, to_return=False):
     """
     Counts the number of unique source packages, classes, and classes excluding tests in the given dependency data.
 
@@ -25,6 +27,8 @@ def count_classes(deps):
     ----------
     deps : pandas.DataFrame
         The dependency data to analyze.
+    to_return : bool, optional
+        If True, returns a pandas.Series of classes instead of counts. Default is False.
 
     Returns
     -------
@@ -40,7 +44,10 @@ def count_classes(deps):
     target_matches = deps[deps['TargetPackage'].isin(packages)]
     classes = target_matches['Target'].unique()
     no_tests = [c for c in classes if 'Test' not in str(c)] # needed this cause .unique() returns NumPy array not a pandas series
-    return len(packages), len(classes), len(no_tests)
+    if to_return:
+        return target_matches['Target'].value_counts(dropna=False)
+    else:
+        return len(packages), len(classes), len(no_tests)
 
 def count_methods(deps):
     """
@@ -81,11 +88,68 @@ def count_by_category(deps):
     counts = deps['Category'].fillna('Unknown').value_counts(dropna=False)
     return counts.to_dict()
 
+def count_source_classes(deps):
+    """
+    Helper method to count the number of unique source classes in the given dependency data.
+
+    Parameters
+    ----------
+    deps : pandas.DataFrame
+        The dependency data to analyze.
+
+    Returns
+    -------
+    pandas.Series
+        The count of unique source classes in the 'SourcePackage' column.
+    """
+    
+    deps = correct_dataframe(deps)
+    counts = deps['SourcePackage'].value_counts()
+    return counts
+
+def count_class_changes(deps, previous, source):
+    """
+    Counts the number of class changes since the last release in the given dependency data.
+
+    Parameters
+    ----------
+    deps : pandas.DataFrame
+        The dependency data to analyze.
+    previous : dict
+        A dictionary containing the previous release's class data. Value is None for first iteration.
+    source : boolean
+        If true, uses the source class counting method, otherwise uses the target class counting method.
+
+    Returns
+    -------
+    tuple
+        A tuple containing:
+        - The number of new classes since the last release.
+        - The number of removed classes since the last release.
+        - The number of changed classes since the last release.
+    """
+    
+    deps = correct_dataframe(deps)
+    current_counts = count_source_classes(deps) if source else count_classes(deps, True)
+    global previous_class_data
+    if previous is not None:
+        new_classes = current_counts[~current_counts.index.isin(previous.index)]
+        removed_classes = previous[~previous.index.isin(current_counts.index)]
+        common_classes = current_counts.index.intersection(previous.index)
+        changed_counts = current_counts[common_classes].compare(previous[common_classes])
+        previous_class_data = current_counts
+        return len(new_classes), len(removed_classes), len(changed_counts)
+    
+    previous_class_data = current_counts
+    return 0, 0, 0
+    
 def compute_metrics(deps):
     total_deps = count_dependencies(deps)
     num_pkgs, num_classes, num_no_tests = count_classes(deps)
     num_methods = count_methods(deps)
     category_counts = count_by_category(deps)
+    num_source_classes = len(count_source_classes(deps))
+    new_classes, removed_classes, changed_classes = count_class_changes(deps, previous_class_data, True)
 
     return {
         'Total Dependencies': total_deps,
@@ -93,5 +157,8 @@ def compute_metrics(deps):
         'Num Classes': num_classes,
         'Num Classes (No Tests)': num_no_tests,
         'Num Methods (No Constructors)': num_methods,
+        'Class Changes': changed_classes,
+        'New Classes': new_classes,
+        'Removed Classes': removed_classes,
         **category_counts
     }
