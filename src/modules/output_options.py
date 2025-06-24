@@ -10,4 +10,5 @@ def write_tsv(all_metrics, output_path):
     df = pd.DataFrame(all_metrics)
     df = df.fillna(0).set_index('File')
     df = df.astype(int)
+    df = df[sorted(df.columns)]
     df.to_csv(output_path, sep='\t')
