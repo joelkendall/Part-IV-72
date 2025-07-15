@@ -5,3 +5,5 @@ pytz==2025.2
 six==1.17.0
 tzdata==2025.2
 packaging>=23.0
+PyQt6>=6.6.1
+bokeh>=3.4.0
