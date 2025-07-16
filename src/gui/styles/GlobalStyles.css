@@ -1,18 +1,37 @@
-QLabel {
-        font-size: 36px;
+
+
+/* COLOUT CONSTANTS */
+/*:root {
+    --primary-text: #FAFFD8;
+    --secondary-text: #E3F2FD;
+    --background-color: #333232;
+}*/
+
+QLabel#title {
+        font-size: 60px;
         font-weight: bold;
         margin: 20px;
+        font-family: "Cormorant Garamond";
+        color: #FAFFD8;
     }
 
 
-QPushButton {
-        font-size: 18px;
-        background-color: #2196F3;
-        color: white;
-        border-radius: 5px;
+QPushButton#regButton {
+        font-size: 20px;
+        background-color: #FAFFD8;
+        color: #252627;
+        border-radius: 10px;
         margin: 10px;
+        padding: 10px 20px;
+        font-family: "Cormorant Garamond";
+        font-weight: bold;
     }
 
 QPushButton:hover {
-        background-color: #1976D2;
+        background-color: #C4B2BC;
     }
+
+QMainWindow {
+    background-color: #252627;
+}
+

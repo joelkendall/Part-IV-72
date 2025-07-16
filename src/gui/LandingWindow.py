@@ -1,7 +1,8 @@
+from pathlib import Path
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget, QVBoxLayout,
-                           QPushButton, QLabel, QFileDialog)
+                           QPushButton, QLabel, QFileDialog, QMessageBox)
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QCursor
+from PyQt6.QtGui import QCursor, QFontDatabase
 import TSVReader 
 
 class LandingWindow(QMainWindow):
@@ -15,6 +16,11 @@ class LandingWindow(QMainWindow):
         x = (screen.width() - self.width()) // 2
         y = (screen.height() - self.height()) // 2
         self.move(x, y)
+
+        fonts_path = Path(__file__).parent / 'fonts' / 'corm' / 'cormorant-garamond'
+        for font_file in fonts_path.glob('*.ttf'):
+            QFontDatabase.addApplicationFont(str(font_file))
+    
         
         self.initUI()
 
@@ -26,11 +32,12 @@ class LandingWindow(QMainWindow):
             style_sheet = f.read()
         self.setStyleSheet(style_sheet)
 
-        layout = QVBoxLayout(central_widget)
-        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.layout = QVBoxLayout(central_widget)
+        self.layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         title = QLabel("Dependency Analysis")
-        layout.addWidget(title, alignment=Qt.AlignmentFlag.AlignCenter)
+        title.setObjectName("title")
+        self.layout.addWidget(title, alignment=Qt.AlignmentFlag.AlignCenter)
         
        
         create_button = QPushButton("Create TSV for Analysis")
@@ -38,18 +45,20 @@ class LandingWindow(QMainWindow):
         create_button.setMinimumHeight(50)
         create_button.clicked.connect(self.choose_directory)
         create_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        create_button.setObjectName("regButton")
 
         
-        analyze_button = QPushButton("Analyze TSV")
-        analyze_button.setMinimumWidth(300)
-        analyze_button.setMinimumHeight(50)
-        analyze_button.clicked.connect(self.analyze_tsv)
-        analyze_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        analyse_button = QPushButton("Analyse TSV")
+        analyse_button.setMinimumWidth(300)
+        analyse_button.setMinimumHeight(50)
+        analyse_button.clicked.connect(self.analyse_tsv)
+        analyse_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        analyse_button.setObjectName("regButton")
         
-        layout.addSpacing(50)
-        layout.addWidget(create_button, alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(analyze_button, alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addSpacing(50)
+        self.layout.addSpacing(50)
+        self.layout.addWidget(create_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(analyse_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.layout.addSpacing(50)
 
     def choose_directory(self):
         directory = QFileDialog.getExistingDirectory(
@@ -59,11 +68,35 @@ class LandingWindow(QMainWindow):
             QFileDialog.Option.ShowDirsOnly
         )
         if directory:
-            print(f"Selected directory: {directory}")
-            # gotta add tsvreader shit here
+            project_root = Path(__file__).resolve().parent.parent.parent
+            rel_path = Path(directory).relative_to(project_root)
+            print(f"Selected directory: {rel_path}")
+            self.progress_label = QLabel("Starting...")
+            self.progress_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.layout.addWidget(self.progress_label)
+            
+            try:
+                # Process files and update progress
+                for success, message in TSVReader.process_directory(
+                    directory=str(rel_path),
+                    omit_javalang=False,  # Add checkboxes in GUI for these options
+                    omit_javaall=False,
+                    output='aggregated_output.tsv'
+                ):
+                    if not success:
+                        QMessageBox.critical(self, "Error", message)
+                        break
+                    self.progress_label.setText(message)
+                    QApplication.processEvents()  # Keep GUI responsive
+                    
+            except Exception as e:
+                QMessageBox.critical(self, "Error", str(e))
+            finally:
+                # Clean up progress display
+                self.progress_label.deleteLater()
             
 
-    def analyze_tsv(self):
+    def analyse_tsv(self):
         
         file_name, _ = QFileDialog.getOpenFileName(
             self,
