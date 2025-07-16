@@ -57,5 +57,12 @@ A dependency view of software evolution
     python TSVReader.py data/junit-depfiles/junit-depfiles --oj
     ```
 
+## Running GUI
+
+1. Navigate to src directory
+
+2. Run GUIMain.py via IDE or Command Line
+
+
 
     
