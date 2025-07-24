@@ -8,3 +8,4 @@ local_user
 __pycache__
 *.pyc
 *.tsv
+*_results
