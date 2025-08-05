@@ -4,8 +4,8 @@ import sys
 import re
 from pathlib import Path
 from packaging.version import parse
-from modules.metrics import compute_metrics
-from modules.output_options import print_metrics, write_tsv
+from modules.metrics.metrics import compute_metrics
+from modules.metrics.output_options import print_metrics, write_tsv
 
 
 # ---- VERSION PARSING FOR SORTING

@@ -1,7 +1,7 @@
 import pandas as pd
 import argparse
-from modules.spike_drop_counter import count_spikes_and_drops
-from modules.total_change import calculate_total_increase
+from modules.metrics.spike_drop_counter import count_spikes_and_drops
+from modules.metrics.total_change import calculate_total_increase
 
 def load_file(filepath):
     if filepath.endswith('.xlsx') or filepath.endswith('.xls'):

@@ -105,7 +105,7 @@ def count_source_classes(deps):
     """
     
     deps = correct_dataframe(deps)
-    counts = deps['SourcePackage'].value_counts()
+    counts = deps['Source'].value_counts()
     return counts
 
 def count_class_changes(deps, previous, source):
@@ -186,6 +186,23 @@ def count_dependencies_per_class(deps):
     deps = correct_dataframe(deps)
     counts = deps['Source'].value_counts()
     return counts.to_dict()
+
+def categories_per_class(deps):
+    """
+    Counts the number of occurrences of each category for each class in the given dependency data.
+
+    Parameters
+    ----------
+    deps : pandas.DataFrame
+        The dependency data to analyze.
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame where each row represents a class and each column represents a category, with counts as values.
+    """
+    deps = correct_dataframe(deps)
+    category_percentages = deps.groupby('Source')['Category'].value_counts(normalize=True).unstack(fill_value=0)
+    return category_percentages
     
 def compute_metrics(deps):
     total_deps = count_dependencies(deps)
@@ -208,3 +225,10 @@ def compute_metrics(deps):
         **category_counts,
         **deps_per_class
     }
+
+def compute_class_metrics(deps):
+    all_classes = count_dependencies_per_class(deps)
+    cat_percents = categories_per_class(deps)
+
+
+
