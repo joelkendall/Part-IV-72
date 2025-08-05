@@ -5,4 +5,7 @@
 data/
 local_user
 *.egg-info
-src/__pycache__
+__pycache__
+*.pyc
+*.tsv
+*_results
