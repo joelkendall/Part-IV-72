@@ -16,6 +16,7 @@ def load_file(filepath):
     
     return df
 
+# --- CLI usage
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Summarize dependency trends in software versions.")
     parser.add_argument("filepath", help="Path to the Excel or CSV file")
