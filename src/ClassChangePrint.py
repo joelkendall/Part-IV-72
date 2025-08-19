@@ -1,8 +1,10 @@
 import pandas as pd
+import argparse
 from pathlib import Path
 from packaging.version import parse
 from modules.metrics import count_classes, count_source_classes
 from TSVReader import extract_version
+
 
 # --- Main logic
 def track_class_dependency_changes(folder_path, output_path="class_changes_summary.txt", use_source=True):
@@ -46,8 +48,6 @@ def track_class_dependency_changes(folder_path, output_path="class_changes_summa
 
 # --- CLI usage
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser(description="Track and print classes with changed dependency counts.")
     parser.add_argument("folder", help="Folder containing .tsv dependency files")
     parser.add_argument("--out", default="class_changes_summary.txt", help="File to write the output")
