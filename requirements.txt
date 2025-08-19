@@ -5,3 +5,4 @@ pytz==2025.2
 six==1.17.0
 tzdata==2025.2
 packaging>=23.0
+plotly==6.2.0
