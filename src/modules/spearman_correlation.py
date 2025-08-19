@@ -1,6 +1,7 @@
 import pandas as pd
 import argparse
 from itertools import combinations
+from utils.excel_utils import ExcelUtils
 
 def calculate_spearman_correlation(df, col1, col2):
     """
@@ -25,7 +26,7 @@ def generate_spearman_correlation_matrix(file_path, sheet_name=1):
     pandas.DataFrame
         Spearman correlation matrix (symmetric).
     """
-    df = pd.read_excel(file_path, sheet_name=sheet_name)
+    df = ExcelUtils.load_with_prompt(file_path)
     numeric_cols = df.select_dtypes(include='number').columns
 
     # Initialize empty correlation matrix
@@ -42,7 +43,7 @@ def generate_spearman_correlation_matrix(file_path, sheet_name=1):
 
     return corr_matrix
 
-# Example usage:
+# --- CLI usage
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Analyze correlation coefficients between categories from TSV files')
     parser.add_argument('directory', help='Path to directory containing the TSV files')
@@ -54,3 +55,4 @@ if __name__ == "__main__":
     corr_matrix.to_csv('spearman_correlation_matrix.tsv', sep='\t', float_format='%.6f')
     
     print(corr_matrix.round(3)) 
+
