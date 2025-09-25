@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-
+from modules.utils.excel_utils import ExcelUtils
 # -----------------------------
 # 1) Load data (CSV or Excel)
 # -----------------------------
@@ -22,7 +22,7 @@ if len(sys.argv) < 2:
 file_path = Path(sys.argv[1])
 if file_path.suffix.lower() in [".xlsx", ".xls"]:
     # adjust sheet_name as needed; you used index 1 previously
-    df = pd.read_excel(file_path, sheet_name=1)
+    df = ExcelUtils.load_with_prompt(file_path)
 else:
     df = pd.read_csv(file_path)
 
