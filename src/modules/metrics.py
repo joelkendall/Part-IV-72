@@ -195,6 +195,9 @@ def compute_metrics(deps):
     new_classes, removed_classes, changed_classes = count_class_changes(deps, previous_class_data, True)
     deps_per_class = count_dependencies_per_class(deps)
 
+    category_counts_prefixed = {f"Cat_{k}": v for k, v in category_counts.items()}
+
+
     return {
         'Total Dependencies': total_deps,
         'Num Source Packages': num_pkgs,
@@ -205,6 +208,6 @@ def compute_metrics(deps):
         'Class Changes': changed_classes,
         'New Classes': new_classes,
         'Removed Classes': removed_classes,
-        **category_counts,
+         **category_counts_prefixed,
         **deps_per_class
     }
