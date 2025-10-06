@@ -1,11 +1,51 @@
-import pandas as pd
 import argparse
 from pathlib import Path
-from modules.metrics import count_classes, count_source_classes
+import pandas as pd
+
+from modules.metrics import (
+    count_classes,
+    count_source_classes,
+    correct_dataframe,  
+)
 from TSVReader import extract_version
 
-# --- Main logic
-def track_class_dependency_changes(folder_path, output_path="class_changes_summary.txt", use_source=True, categories=None):
+
+def print_information(outfile):
+    header = "==== Symbol Information ===="
+    legend = " (+) : added Class\n (-) : removed Class\n"
+    print(header)
+    outfile.write(header + "\n")
+    outfile.write(legend + "\n")
+
+
+def print_version_header(tsv_path: Path, outfile):
+    version_header = f"\n==== Version {tsv_path.stem} ===="
+    print(version_header.strip())
+    outfile.write(version_header + "\n")
+
+
+def build_per_category(df_norm: pd.DataFrame) -> pd.DataFrame | None:
+    """
+    Build per-class-per-category counts from the **normalized** dataframe,
+    so the row keys (class names) match those used by count_*() outputs.
+    After correct_dataframe(), the class column is 'Source' and categories are in 'Category'.
+    """
+    if "Source" in df_norm.columns and "Category" in df_norm.columns:
+        return (
+            df_norm
+            .groupby(["Source", "Category"])
+            .size()
+            .unstack(fill_value=0)
+        )
+    return None
+
+
+def track_class_dependency_changes(
+    folder_path,
+    output_path="class_changes_summary.txt",
+    use_source=True,
+    categories=None
+):
     folder = Path(folder_path)
     found_tsv_files = sorted(folder.glob("*.tsv"), key=lambda f: extract_version(f.name))
 
@@ -13,81 +53,123 @@ def track_class_dependency_changes(folder_path, output_path="class_changes_summa
         print(f"No .tsv files found in: {folder}")
         return
 
-    previous = None
+    previous_totals: pd.Series | None = None   # per-class totals (Series)
+    previous_cats: pd.DataFrame | None = None  # per-class per-category total (DataFrame)
 
     with open(output_path, "w", encoding="utf-8") as outfile:
         print_information(outfile)
+
         for tsv in found_tsv_files:
-            df = pd.read_csv(tsv, sep="\t", skiprows=26)
+            df_raw = pd.read_csv(tsv, sep="\t", skiprows=26)
 
-            # Apply category filtering if provided
-            if categories:
-                df = df[df["Category"].isin(categories)]
+            # Apply user category filter (union of selected categories)
+            df_filtered = (
+                df_raw[df_raw["Category"].isin(categories)]
+                if categories
+                else df_raw
+            )
 
-            current = count_source_classes(df) if use_source else count_classes(df, to_return=True)
+            # Normalize dataframe so it can be used with count_*() methods in metrics.py
+            df_norm = correct_dataframe(df_filtered.copy())
 
-            if previous is not None:
-                
-                # Calculate changed classes
-                common = current.index.intersection(previous.index)
-                changed = current[common].compare(previous[common])
+            
+            if use_source:
+                current_totals = count_source_classes(df_norm) # track package names only
+            else:
+                current_totals = count_classes(df_norm, to_return=True) # track full class names
 
-                # Extract unique changed class names
+            # Build per-category table for this version using the same df
+            current_cats = build_per_category(df_norm)
+
+            # Build per-category table for the previous version
+            if previous_totals is not None:
+                # only classes present in both are comparable for .compare()
+                common = current_totals.index.intersection(previous_totals.index)
+                changed = current_totals[common].compare(previous_totals[common])
                 changed_class_names = changed.index.get_level_values(0).unique().tolist()
 
-                # Output header
                 print_version_header(tsv, outfile)
-
-                # Output changed class names with categories and change type
+                
                 if changed_class_names:
-                    for name in sorted(changed_class_names):
-                        
-                        # Calculate change type
-                        current_count = current.loc[name].sum() if name in current.index else 0
-                        previous_count = previous.loc[name].sum() if name in previous.index else 0
+                    for class_x in sorted(changed_class_names):
+                        # track total class changes and determine if class is added or removed
+                        cur_total = current_totals.loc[class_x] if class_x in current_totals.index else 0
+                        prev_total = previous_totals.loc[class_x] if class_x in previous_totals.index else 0
+                        delta_total = cur_total - prev_total
+                        sign = "(+)" if delta_total > 0 else "(-)" if delta_total < 0 else "(±)"
 
-                        change_type = "(+)" if current_count > previous_count else "(-)"
-                        
-                        
-                        class_categories = df[df["# Source"] == name]["Category"].dropna().unique()
-                        categories_str = ", ".join(sorted(class_categories))
+                        # idenfiy categories that changed for this class
+                        cats_changed = []
+                        if current_cats is not None and previous_cats is not None:
+                            # Get per-category counts for this class (0s if class not present in current version)
+                            cur_row = (
+                                current_cats.loc[class_x]
+                                if class_x in current_cats.index
+                                else pd.Series(0, index=current_cats.columns)
+                            )
+                            prev_row = (
+                                previous_cats.loc[class_x]
+                                if class_x in previous_cats.index
+                                else pd.Series(0, index=previous_cats.columns)
+                            )
+                            
+                            #c combine all unique category names that exist in either
+                            all_cols = sorted(set(cur_row.index) | set(prev_row.index))
 
-                        # Result Formatting
-                        line = f"{change_type} {name}"
-                        if categories:
-                            line = f"{change_type} {name} : {categories_str}"
-                        
-                        # Output
+                            # fill with 0s for any missing categories 
+                            cur_row = cur_row.reindex(all_cols, fill_value=0)
+                            prev_row = prev_row.reindex(all_cols, fill_value=0)
+
+                            # Determine which categories to compare for this class
+                            # if user did not specify categories, compare all
+                            cols_to_check = [c for c in all_cols if (not categories) or (c in categories)]
+
+                            # Determine which categories have changed
+                            cats_changed = [c for c in cols_to_check if cur_row[c] != prev_row[c]]
+
+                        # Format output: 
+                        # defult: signs and class name only
+                        # with categories: signs, class name, and changed categories involved
+                        # no changes: (No changed classes)
+                        if cats_changed:
+                            cats_str = ", ".join(sorted(cats_changed))
+                            line = f"{sign} {class_x} : {cats_str}"
+                        else:
+                            line = f"{sign} {class_x}"
+
                         print(f" {line}")
                         outfile.write(f" {line}\n")
                 else:
                     print(" (No changed classes)")
                     outfile.write(" (No changed classes)\n")
 
-            previous = current
+            # 7) Carry forward for next version
+            previous_totals = current_totals
+            previous_cats = current_cats
 
     print(f"\n Summary written to '{output_path}'")
 
-def print_version_header(tsv, outfile):
-    version_header = f"\n==== Version {tsv.stem} ===="
-    print(version_header.strip())
-    outfile.write(version_header + "\n")
 
-def print_information(outfile):
-    header = f"\n==== Symbol Information ===="
-    information = f" (+) : added Class\n" \
-                f" (-) : removed Class\n"
-    print(header.strip())
-    outfile.write(header + "\n")
-    outfile.write(information + "\n")
-
-# --- CLI usage
+# --- CLI ---
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Track and print classes with changed dependency counts.")
     parser.add_argument("folder", help="Folder containing .tsv dependency files")
     parser.add_argument("--out", default="class_changes_summary.txt", help="File to write the output")
-    parser.add_argument("--source", action="store_true", help="Use source classes (default: source, to match metrics.py)")
-    parser.add_argument("--category", nargs='+', help="One or more dependency categories to filter by (e.g., Return Field Parameter)")
-
+    parser.add_argument(
+        "--source",
+        action="store_true",
+        help="Use source classes (default: source, to match metrics.py)"
+    )
+    parser.add_argument(
+        "--category",
+        nargs="+",
+        help="One or more dependency categories to filter by (e.g., Return Field Parameter)"
+    )
     args = parser.parse_args()
-    track_class_dependency_changes(args.folder, args.out, use_source=args.source, categories=args.category)
+
+    track_class_dependency_changes(
+        args.folder,
+        args.out,
+        use_source=args.source,
+        categories=args.category
+    )

@@ -3,17 +3,33 @@ import pandas as pd
 previous_class_data = None
 
 # ---- CREATING CORRECT DATAFRAME (new row for each location and removing polymorphic dependencies)
-def correct_dataframe(deps):
+def correct_dataframe(deps: pd.DataFrame) -> pd.DataFrame:
+    
+    if 'Inheritance' not in deps.columns:
+        deps['Inheritance'] = ''
+
+    if 'Locations' not in deps.columns:
+        deps['Locations'] = ''
+
+    inh = deps['Inheritance'].astype('string').fillna('')
+    inh = inh.replace(r'^\s*(nan|NaN|None|null)\s*$', '', regex=True)
+    deps = deps[~inh.str.contains('Polymorphic', na=False)]
+
+    # Fill NaN values and have each location of a dependency in a separate row.
     deps.loc[:, 'Locations'] = deps['Locations'].fillna('')
-    deps = deps[~deps['Inheritance'].str.contains('Polymorphic', na=False)]
+    deps.loc[:, 'Locations'] = deps['Locations'].astype('string')
     deps.loc[:, 'Locations'] = deps['Locations'].str.split(',')
     deps = deps.explode('Locations').reset_index(drop=True)
-    # renaming duplicate package columns
-    deps = deps.rename(columns={
-        deps.columns[0]: 'Source',
-        deps.columns[1]: 'SourcePackage',
-        deps.columns[5]: 'TargetPackage'
-    })
+    
+
+    # Renaming duplicate package columns to something more meaningful
+    if deps.shape[1] > 5: 
+        deps = deps.rename(columns={
+            deps.columns[0]: 'Source',
+            deps.columns[1]: 'SourcePackage',
+            deps.columns[5]: 'TargetPackage'
+        })
+
     return deps
 
 def count_dependencies(deps):
