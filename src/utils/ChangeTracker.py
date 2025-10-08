@@ -54,4 +54,32 @@ class ChangeTracker:
             print("\nTop 5 largest changes:")
             print(current_metrics.nlargest(5, 'Incoming Change')[['Total Dependencies', 'Incoming Change']])
     
+    def get_training_data(self):
+        """
+        Get training data from all releases except the last one.
+        Returns a DataFrame with features and changes for ML training.
+        """
+        training_data = []
+        
+        # Skip the last release as it won't have future changes
+        for release in self.ordered_releases[:-1]:
+            release_metrics = self.releases[release]
+            
+            # Create a row for each class
+            for class_name in release_metrics.index:
+                row_data = {
+                    'Release': release,
+                    'Class': class_name,
+                    'Total Dependencies': release_metrics.loc[class_name, 'Total Dependencies'],
+                    'Incoming Change': release_metrics.loc[class_name, 'Incoming Change']
+                }
+                
+                # Add category percentages
+                for col in release_metrics.columns:
+                    if col not in ['Total Dependencies', 'Incoming Change']:
+                        row_data[col] = release_metrics.loc[class_name, col]
+                
+                training_data.append(row_data)
+        
+        return pd.DataFrame(training_data)
 
