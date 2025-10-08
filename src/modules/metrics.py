@@ -21,6 +21,9 @@ def correct_dataframe(deps: pd.DataFrame) -> pd.DataFrame:
     deps.loc[:, 'Locations'] = deps['Locations'].str.split(',')
     deps = deps.explode('Locations').reset_index(drop=True)
     
+    # --- Remove rows with "synthetic" in Details
+    if 'Details' in deps.columns:
+        deps = deps[~deps['Details'].astype(str).str.contains('synthetic', case=False, na=False)]
 
     # Renaming duplicate package columns to something more meaningful
     if deps.shape[1] > 5: 
