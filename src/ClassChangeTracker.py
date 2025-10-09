@@ -83,10 +83,9 @@ def track_class_dependency_changes(
 
             # Build per-category table for the previous version
             if previous_totals is not None:
-                # only classes present in both are comparable for .compare()
-                common = current_totals.index.intersection(previous_totals.index)
-                changed = current_totals[common].compare(previous_totals[common])
-                changed_class_names = changed.index.get_level_values(0).unique().tolist()
+               
+                changed_class_names = detect_classes_with_category_changes(current_cats, previous_cats, categories)
+                
                 # capture classes that are new or removed (not in 'common')
                 new_class_names = current_totals.index.difference(previous_totals.index).tolist()
                 removed_class_names = previous_totals.index.difference(current_totals.index).tolist()
@@ -105,19 +104,50 @@ def track_class_dependency_changes(
 
     print(f"\n Summary written to '{output_path}'")
 
+def detect_classes_with_category_changes(
+    current_cats: pd.DataFrame,
+    previous_cats: pd.DataFrame,
+    categories: list[str] | None
+) -> list[str]:
+    """
+    Returns a list of class names whose per-category dependency counts have changed,
+    even if their total dependency count remains unchanged.
+    """
+    changed_class_names = []
+
+    # Get classes present in both versions
+    common_classes = current_cats.index.intersection(previous_cats.index)
+
+    for class_x in common_classes:
+        cur_row = current_cats.loc[class_x].fillna(0)
+        prev_row = previous_cats.loc[class_x].fillna(0)
+
+        # Union of all columns present in either version
+        cols_to_check = categories if categories else sorted(set(cur_row.index) | set(prev_row.index))
+
+        for cat in cols_to_check:
+            if cur_row.get(cat, 0) != prev_row.get(cat, 0):
+                changed_class_names.append(class_x)
+                break
+
+    return changed_class_names
+
 def print_common_class_changes(categories, previous_totals, previous_cats, outfile, current_totals, current_cats, changed_class_names):
     if changed_class_names:
         for class_x in sorted(changed_class_names):
-                        # track total class changes and determine if class is added or removed
+            
+            # track total class changes and determine if class is added or removed
             cur_total = current_totals.loc[class_x] if class_x in current_totals.index else 0
             prev_total = previous_totals.loc[class_x] if class_x in previous_totals.index else 0
             delta_total = cur_total - prev_total
             sign = "(+)" if delta_total > 0 else "(-)" if delta_total < 0 else "(±)"
 
-                        # idenfiy categories that changed for this class
+            # idenfiy categories that changed for this class
             cats_changed = []
+
             if current_cats is not None and previous_cats is not None:
-                            # Get per-category counts for this class (0s if class not present in current version)
+                
+            # Get per-category counts for this class (0s if class not present in current version)
                 cur_row = (
                                 current_cats.loc[class_x]
                                 if class_x in current_cats.index
@@ -129,24 +159,24 @@ def print_common_class_changes(categories, previous_totals, previous_cats, outfi
                                 else pd.Series(0, index=previous_cats.columns)
                             )
                             
-                            #c combine all unique category names that exist in either
+                # combine all unique category names that exist in either
                 all_cols = sorted(set(cur_row.index) | set(prev_row.index))
 
-                            # fill with 0s for any missing categories 
+                # fill with 0s for any missing categories 
                 cur_row = cur_row.reindex(all_cols, fill_value=0)
                 prev_row = prev_row.reindex(all_cols, fill_value=0)
 
-                            # Determine which categories to compare for this class
-                            # if user did not specify categories, compare all
+                # Determine which categories to compare for this class
+                # if user did not specify categories, compare all
                 cols_to_check = [c for c in all_cols if (not categories) or (c in categories)]
 
-                            # Determine which categories have changed
+                # Determine which categories have changed
                 cats_changed = [c for c in cols_to_check if cur_row[c] != prev_row[c]]
 
-                        # Format output: 
-                        # defult: signs and class name only
-                        # with categories: signs, class name, and changed categories involved
-                        # no changes: (No changed classes)
+            # Format output: 
+            # defult: signs and class name only
+            # with categories: signs, class name, and changed categories involved
+            # no changes: (No changed classes)
             if cats_changed:
                 cats_str = ", ".join(sorted(cats_changed))
                 line = f"{sign} {class_x} : {cats_str}"
@@ -163,7 +193,8 @@ def print_removed_classes(categories, previous_cats, outfile, removed_class_name
     for class_x in sorted(removed_class_names):
         cats_str = ""
         if previous_cats is not None:
-                        # categories the class had in the previous version
+            
+            # categories the class had in the previous version
             prev_row = previous_cats.loc[class_x] if class_x in previous_cats.index else None
             if prev_row is not None:
                 cols = categories if categories else prev_row.index.tolist()
@@ -178,10 +209,12 @@ def print_new_classes(categories, outfile, current_cats, new_class_names):
     for class_x in sorted(new_class_names):
         cats_str = ""
         if current_cats is not None:
-                        # categories present for this new class in the current version
+            
+            # categories present for this new class in the current version
             cur_row = current_cats.loc[class_x] if class_x in current_cats.index else None
             if cur_row is not None:
-                            # if user passed --category, only show those; else show any non-zero
+                
+                # if user passed --category, only show those; else show any non-zero
                 cols = categories if categories else cur_row.index.tolist()
                 changed_cols = [c for c in cols if cur_row.get(c, 0) != 0]
                 if changed_cols:
