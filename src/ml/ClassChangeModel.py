@@ -13,7 +13,7 @@ class ClassChangeModel:
         self.model = RandomForestClassifier(
             n_estimators=100, 
             random_state=42,
-            class_weight='balanced'  # Fix the bias by balancing class weights!
+            class_weight='balanced'
         )
         self.scaler = StandardScaler()
         self.data_columns = []

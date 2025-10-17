@@ -11,27 +11,26 @@ import pandas as pd
 from sklearn.metrics import classification_report
 
 def simple_prediction_test():
-    """Simple test on JStock data"""
+    end_file = 36
+    mid_file = 35
+    start_file = 34
+    print("=== PREDICTION TEST ===")
     
-    print("=== JSTOCK PREDICTION TEST ===")
-    
-    # Load model
     model = ClassChangeModel()
-    model.load_model("eventual_change_model.pkl")
+    model.load_model("model_trained_on_1_datasets.pkl")
     
-    # Load JStock data instead of JUnit
-    path = Path('data/jgraph-jmeter-jstock-jung-lucene-weka/jstock_deps/jstock')
-    tsv_files = sorted(path.glob('*.tsv'))[:20]  # Use first 8 files for more data
+    path = Path('data/jgraph-jmeter-jstock-jung-lucene-weka/lucene_deps/lucene')
+    tsv_files = sorted(path.glob('*.tsv'))[:end_file]  
     
     if len(tsv_files) < 2:
         print("Need at least 2 files!")
         return
     
-    print(f"Found {len(tsv_files)} JStock files")
+    print(f"Found {len(tsv_files)} files")
     
     # Use first 18 files for context, predict on 19th, compare with 20th
-    context_files = tsv_files[:18]
-    predict_file = tsv_files[18]
+    context_files = tsv_files[:start_file]
+    predict_file = tsv_files[start_file]
     
     print(f"Context files: {len(context_files)} files from {context_files[0].name} to {context_files[-1].name}")
     print(f"Predicting on: {predict_file.name}")
@@ -53,8 +52,8 @@ def simple_prediction_test():
     predictions = model.predict_changes(prediction_data)
     
     # Now add the 20th file to get actual changes
-    if len(tsv_files) > 19:
-        final_file = tsv_files[19]
+    if len(tsv_files) > mid_file:
+        final_file = tsv_files[mid_file]
         df_final = pd.read_csv(final_file, sep='\t', skiprows=26)
         tracker.add_release(final_file.stem, df_final)
         

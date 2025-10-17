@@ -1,4 +1,4 @@
-import ClassChangeModel
+from ClassChangeModel import ClassChangeModel
 from utils.ChangeTracker import ChangeTracker
 import pandas as pd
 from pathlib import Path
@@ -9,25 +9,11 @@ def train_with_multiple_datasets():
     # DATASET PATHS
     datasets = [
         {
-            'name': 'JUnit',
-            'path': 'data/junit-depfiles/junit-depfiles',
-            'max_files': 8  
-        },
-        {
-            'name': 'JStock', 
-            'path': 'data/jgraph-jmeter-jstock-jung-lucene-weka/jstock_deps/jstock',
-            'max_files': 15
-        },
-        {
-            'name': 'Jung',
-            'path': 'data/jgraph-jmeter-jstock-jung-lucene-weka/jung_deps/jung',
-            'max_files': 10
-        },
-        {
-            'name': 'Lucene',
+            'name': 'Lucene', 
             'path': 'data/jgraph-jmeter-jstock-jung-lucene-weka/lucene_deps/lucene',
-            'max_files': 20
-        }
+            'max_files': 35
+        },
+
     ]
     
     all_training_data = []

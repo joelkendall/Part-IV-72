@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Train a model using eventual changes instead of immediate changes
-"""
-
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent))
