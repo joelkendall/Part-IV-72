@@ -1,4 +1,3 @@
-# spike_and_drop_counter.py
 def count_spikes_and_drops(df):
     """
     Calculates and prints the number of spikes and drops in the percentage change of total dependencies (>= 10%, <= -10%).

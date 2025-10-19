@@ -44,7 +44,7 @@ def main():
         sys.exit(1)
 
 
-    # ---- MAIN
+# --- CLI usage
     all_metrics = []
 
     for TSV_PATH in tsv_files:
