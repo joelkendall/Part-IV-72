@@ -6,7 +6,6 @@ from pathlib import Path
 def next_release_training():
     model = ClassChangeModel()
     
-    # --DATASET PATHS--
     # These are hardcoded as it was simpler for repeatdly testing the same system, rather than
     # parsing paths via cmd line.
     datasets = [
@@ -107,7 +106,7 @@ def show_results():
     
     
     print(f"\nModel is ready for predictions")
-    print(f"\nUse next_release_testing to test model predictions")
+    print(f"\nUse next_release_test.py to test model predictions")
     
     return model
 
