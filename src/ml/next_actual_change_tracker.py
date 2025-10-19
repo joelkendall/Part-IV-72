@@ -1,5 +1,5 @@
 import pandas as pd
-from modules.metrics.metrics import count_dependencies_per_class, categories_per_class
+from modules.metrics import count_dependencies_per_class, categories_per_class
 
 class NextActualChangeTracker:
 
