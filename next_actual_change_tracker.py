@@ -1,25 +1,13 @@
-#!/usr/bin/env python3
-"""
-Next Actual Change Tracker - predicts the direction of the next actual change
-whenever it happens, not just immediate changes
-"""
-
 import pandas as pd
 import numpy as np
 from pathlib import Path
 from modules.metrics.metrics import count_dependencies_per_class, categories_per_class
 
 class NextActualChangeTracker:
-    """
-    Tracks the next actual change that happens to each class,
-    regardless of how many releases it takes
-    """
+
+    # Tracks the next actual change that happens to each class
     
     def __init__(self, min_change_threshold=2):
-        """
-        min_change_threshold: Minimum change to consider "actual change"
-        (ignores tiny fluctuations)
-        """
         self.releases = {}
         self.ordered_releases = []
         self.current_release = None
